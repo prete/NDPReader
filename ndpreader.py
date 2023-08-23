@@ -127,10 +127,9 @@ class NDPReader(object):
         Returns:
             list: A list containing x and y coordinates in micrometer pixel units.
         """
-        if len(point)==2:
-            x = (point[0] + self.offset_x) * self.mppx / 1000 
-            y = (point[1] + self.offset_y) * self.mppy / 1000 
-            return [x,y]
+        x = (point[0] + self.offset_x) * self.mppx / 1000 
+        y = (point[1] + self.offset_y) * self.mppy / 1000 
+        return [x,y]
 
     
     def _parse_annotations(self):
