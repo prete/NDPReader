@@ -18,7 +18,7 @@ ndp.info()
  'Date': '2020:09:21 13:00:32',
  'Maker': 'Hamamatsu',
  'Model': 'C13210',
- 'Softwarer': 'NDP.scan 3.3.2',
+ 'Software': 'NDP.scan 3.3.2',
  'Annotations': 27
 }
 ```
@@ -53,7 +53,7 @@ ndp.info()
  'Date': '2020:09:21 13:00:32',
  'Maker': 'Hamamatsu',
  'Model': 'C13210',
- 'Softwarer': 'NDP.scan 3.3.2',
+ 'Software': 'NDP.scan 3.3.2',
  'Annotations': 27
 }
 ```

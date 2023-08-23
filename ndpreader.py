@@ -84,7 +84,7 @@ class NDPReader(object):
             "Date":self.slide_properties['tiff.DateTime'],
             "Maker":self.slide_properties['tiff.Make'],
             "Model":self.slide_properties['tiff.Model'],
-            "Softwarer":self.slide_properties['tiff.Software'],
+            "Software":self.slide_properties['tiff.Software'],
             "Annotations": len(self.annotations),
         }
 
