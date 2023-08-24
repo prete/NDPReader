@@ -82,7 +82,7 @@ for annotation in ndp.annotations:
     polygon.strokeColor = omero.rtypes.rint(hex_to_int(annotation.color))
     polygon.strokeWidth = omero.model.LengthI(5, UnitsLength.PIXEL)
     polygon.points = omero.rtypes.rstring(
-        ", ".join((f"{int(p[0])},{int(p[1])}" for p in annotation.points)))
+        " ".join((f"{int(p[0])},{int(p[1])}" for p in annotation.points)))
     polygon.setTextValue(omero.rtypes.rstring(annotation.title))
     
     # create an ROI, add shape and link to image
