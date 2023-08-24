@@ -2,9 +2,7 @@
 Parse NanoZoomer Digital Pathology Annotation (NDPA) files into a more generic format
 
 # Requirments
-Depends on OpenSlides for reading image dimenions and mpp. Quick two step install:
-1. Install OpenSlide is a C library: `conda install -c conda-forge openslide`
-2. Install python bindings: `pip install openslide-python`
+[Tifffile](https://pypi.org/project/tifffile/) for reading the image data and metadata. Install with `pip install tifffile`.
 
 # Usage:
 
@@ -14,7 +12,9 @@ ndpi_path = "slide.ndpi"
 ndp = NDPReader(ndpi_path)
 ndp.info()
 {
-'Dimensions': (82432, 40320),
+ 'Image Filename': 'slide.ndpi',
+ 'Annotation Filename': 'slide.ndpi.ndpa',
+ 'Dimensions': (82432, 40320),
  'Date': '2020:09:21 13:00:32',
  'Maker': 'Hamamatsu',
  'Model': 'C13210',
@@ -49,7 +49,9 @@ ndpa_path = "annotations.ndpa"
 ndp = NDPReader(ndpi_path, ndpa_path)
 ndp.info()
 {
-'Dimensions': (82432, 40320),
+ 'Image Filename': 'slide.ndpi',
+ 'Annotation Filename': 'annotations.ndpa',
+ 'Dimensions': (82432, 40320),
  'Date': '2020:09:21 13:00:32',
  'Maker': 'Hamamatsu',
  'Model': 'C13210',

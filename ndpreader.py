@@ -1,7 +1,7 @@
 import os
 from types import SimpleNamespace
 import xml.etree.ElementTree as ET
-from openslide import OpenSlide
+import tifffile
 
 class NDPReader(object):
     """
@@ -15,8 +15,8 @@ class NDPReader(object):
         NDP_software (str): The software used to create the NDPI file.
         size_x (int): The width of the slide in pixels.
         size_y (int): The height of the slide in pixels.
-        mppx (float): Microns per pixel in the x-direction.
-        mppy (float): Microns per pixel in the y-direction.
+        mpp_x (float): Microns per pixel in the x-direction.
+        mpp_y (float): Microns per pixel in the y-direction.
         centre_x (float): The x-coordinate of the slide's center in nanometers.
         centre_y (float): The y-coordinate of the slide's center in nanometers.
         offset_from_centre_x (float): The x-offset from the slide's center in nanometers.
@@ -70,6 +70,7 @@ class NDPReader(object):
         self.ndpa_path = ndpa_path
         self._parse_annotations()
 
+
     def info(self):
         """
         Returns information about the NDPI file and associated annotations.
@@ -80,44 +81,51 @@ class NDPReader(object):
         """
         
         return {
+            "Image Filename": os.path.basename(self.ndpi_path),
+            "Annotation Filename": os.path.basename(self.ndpa_path),
             "Dimensions": (self.size_x,self.size_y),
-            "Date":self.slide_properties['tiff.DateTime'],
-            "Maker":self.slide_properties['tiff.Make'],
-            "Model":self.slide_properties['tiff.Model'],
-            "Software":self.slide_properties['tiff.Software'],
+            "Date":self.slide_properties['DateTime'],
+            "Maker":self.slide_properties['Make'],
+            "Model":self.slide_properties['Model'],
+            "Software":self.slide_properties['Software'],
             "Annotations": len(self.annotations),
         }
+
 
     def _parse_image_detais(self):
         """
         Parses image details from the NDPI file.
         """
-        # read slide file
-        self.slide = OpenSlide(self.ndpi_path)
+        with tifffile.TiffFile(self.ndpi_path) as tif:
+            # get most tags
+            self.slide_properties = {tag.name:tag.value for tag in tif.pages[0].tags}
+            # get custom ndpi tags
+            for key,value in tif.pages[0].ndpi_tags.items():
+                self.slide_properties[key] = value
         
-        # get slide properties (metadata)
-        self.slide_properties = dict(self.slide.properties)
-        self.NDP_software = self.slide_properties['tiff.Software']
-    
-        # get slide size and microns per pixel (mpp)
-        self.size_x = self.slide.dimensions[0]
-        self.size_y = self.slide.dimensions[1]
-        self.mppx = 1 / float(self.slide_properties['openslide.mpp-x'])
-        self.mppy = 1 / float(self.slide_properties['openslide.mpp-y'])
+        # get slide size 
+        self.size_x = self.slide_properties['ImageWidth']
+        self.size_y = self.slide_properties['ImageLength']
+        
+        # microns per pixel (mpp) (resolution scale cm to um)
+        self.mpp_x = 10000 / self.slide_properties['XResolution'][0]
+        self.mpp_y = 10000 / self.slide_properties['YResolution'][0]
 
         # calculate centere from pixels to nanometers
-        self.centre_x = (self.size_x / 2) * 1000 / self.mppx
-        self.centre_y = (self.size_y / 2) * 1000 / self.mppy
-        # get offest from metadata (in nm)
-        self.offset_from_centre_x = float(self.slide_properties['hamamatsu.XOffsetFromSlideCentre'])
-        self.offset_from_centre_y = float(self.slide_properties['hamamatsu.YOffsetFromSlideCentre'])
+        self.centre_x = self.size_x * self.mpp_x * 1000 / 2
+        self.centre_y = self.size_y * self.mpp_y * 1000 / 2
+        
+        # get offset from metadata (in nm)
+        self.offset_from_centre_x = self.slide_properties['XOffsetFromSlideCenter']
+        self.offset_from_centre_y = self.slide_properties['YOffsetFromSlideCenter']
+        self.offset_from_centre_z = self.slide_properties['ZOffsetFromSlideCenter']
 
         # translate from center to top left
         self.offset_x = self.centre_x - self.offset_from_centre_x
         self.offset_y = self.centre_y - self.offset_from_centre_y
-        
- 
-    def nm_to_um_px_point(self, point):
+
+
+    def nm_to_pixel(self, point):
         """
         Converts a point in nanometers to micrometer pixel coordinates.
 
@@ -127,11 +135,11 @@ class NDPReader(object):
         Returns:
             list: A list containing x and y coordinates in micrometer pixel units.
         """
-        x = (point[0] + self.offset_x) * self.mppx / 1000 
-        y = (point[1] + self.offset_y) * self.mppy / 1000 
+        x = (point[0] + self.offset_x) / (1000 * self.mpp_x)
+        y = (point[1] + self.offset_y) / (1000 * self.mpp_y)
         return [x,y]
 
-    
+
     def _parse_annotations(self):
         """
         Parses annotations from the NDPA file.
@@ -168,15 +176,15 @@ class NDPReader(object):
                 y2= float(ndpviewstate_element.find('y2').text)
                 # linearmeasure
                 annotation.points = [
-                    [self.nm_to_um_px_point([x1,y1])],
-                    [self.nm_to_um_px_point([x2,y2])],
+                    [self.nm_to_pixel([x1,y1])],
+                    [self.nm_to_pixel([x2,y2])],
                 ]
             else:
                 # all others have x,y,z coords
                 annotation.x = float(ndpviewstate_element.find('x').text)
                 annotation.y = float(ndpviewstate_element.find('y').text)
                 # convert
-                annotation.x, annotation.y = self.nm_to_um_px_point([annotation.x,annotation.y])
+                annotation.x, annotation.y = self.nm_to_pixel([annotation.x,annotation.y])
                 annotation.z = float(ndpviewstate_element.find('z').text)
                 # circle type annotation
                 radius = ndpviewstate_element.find('radius')
@@ -186,6 +194,6 @@ class NDPReader(object):
                 points = annotation_element.findall('pointlist/point')
                 if points:
                     annotation.points = [[float(p.find('x').text),float(p.find('y').text)] for p in points]
-                    annotation.points = [self.nm_to_um_px_point(p) for p in annotation.points]
+                    annotation.points = [self.nm_to_pixel(p) for p in annotation.points]
 
             self.annotations.append(annotation)
