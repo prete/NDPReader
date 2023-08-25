@@ -10,9 +10,7 @@ class NDPReader(object):
     Attributes:
         ndpi_path (str): The path to the NDPI file.
         ndpa_path (str): The path to the associated NDPA file.
-        slide (OpenSlide): An OpenSlide object representing the NDPI file.
         slide_properties (dict): Metadata properties extracted from the NDPI file.
-        NDP_software (str): The software used to create the NDPI file.
         size_x (int): The width of the slide in pixels.
         size_y (int): The height of the slide in pixels.
         mpp_x (float): Microns per pixel in the x-direction.
@@ -21,8 +19,8 @@ class NDPReader(object):
         centre_y (float): The y-coordinate of the slide's center in nanometers.
         offset_from_centre_x (float): The x-offset from the slide's center in nanometers.
         offset_from_centre_y (float): The y-offset from the slide's center in nanometers.
-        offset_x (float): The x-coordinate of the slide's top-left corner in nanometers.
-        offset_y (float): The y-coordinate of the slide's top-left corner in nanometers.
+        offset_x (float): The x-coordinate offset to the slide's top-left corner in nanometers.
+        offset_y (float): The y-coordinate offset to the slide's top-left corner in nanometers.
         annotations (list): A list of parsed annotations from the NDPA file.
 
     Methods:
@@ -35,7 +33,7 @@ class NDPReader(object):
         _parse_image_detais(self):
             Parses image details from the NDPI file.
             
-        nm_to_um_px_point(self, point):
+        nm_to_pixel(self, point):
             Converts a point in nanometers to micrometer pixel coordinates.
 
         _parse_annotations(self):
